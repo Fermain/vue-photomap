@@ -10,8 +10,6 @@ export class FlickrService {
         nojsoncallback: '1'
     }
 
-    constructor() {}
-
     public async search(params: object) {
         const url = new URL(this.baseUrl);
         const method = 'flickr.photos.search';
@@ -23,8 +21,6 @@ export class FlickrService {
         }).toString();
 
         const results = await http<FlickrPhotoResults>(url.toString());
-
-        console.log(results.jsonBody);
 
         const photos = results.jsonBody?.photos.photo.map((photo: any) => new FlickrPhoto(
             photo.id,
