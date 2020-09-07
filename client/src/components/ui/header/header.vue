@@ -1,14 +1,18 @@
 <template>
   <header>
-
+    <fermain-map-search/>
   </header>
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from 'vue-property-decorator';
+import { Component, Vue } from 'vue-property-decorator';
+import FermainMapSearch from '../../map/FermainMapSearch.vue';
 
-@Component
+@Component({
+  components: {
+    FermainMapSearch,
+  }
+})
 export default class FermainHeader extends Vue {
-  @Prop() private example!: string;
 }
 </script>

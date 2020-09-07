@@ -34,6 +34,8 @@ export default class FermainFooter extends Vue {
       V: 5,
       IV: 4,
       I: 1,
+    } as {
+      [key: string]: number
     };
 
     let str = "";
