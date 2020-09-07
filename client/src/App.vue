@@ -6,35 +6,44 @@
     <div class="fermain-logo">
       <h1>Fermain</h1>
     </div>
-    <main>
-      <div class="scroller image-grid">
+    <main class="scroller">
+      <search-history v-show="showHistory" />
+      <div class="image-grid">
         <flickr-image v-for="(value, index) in results" :key="index" :photo="value" />
       </div>
     </main>
     <div class="sidebar-icons">
-      <div class="sidebar-icon"></div>
-      <div class="sidebar-icon"></div>
-      <div class="sidebar-icon"></div>
+      <div class="sidebar-icon" @click="myLocation()">
+        <i class="material-icons" v-if="locationEnabled">location_on</i>
+        <i class="material-icons" v-else>location_off</i>
+      </div>
+      <div class="sidebar-icon" @click="toggleHistory()">
+        <i class="material-icons">history</i>
+      </div>
+      <div class="sidebar-icon" @click="clearResults()">
+        <i class="material-icons">autorenew</i>
+      </div>
     </div>
     <div class="sidebar-items">
-      <div class="sidebar-item">Menu Item</div>
-      <div class="sidebar-item">Menu Item</div>
-      <div class="sidebar-item">Menu Item</div>
+      <div class="sidebar-item" @click="myLocation()">My Location</div>
+      <div class="sidebar-item" @click="toggleHistory()">My History</div>
+      <div class="sidebar-item" @click="clearResults()">View Map</div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue } from 'vue-property-decorator';
 
-import FermainHeader from "./components/ui/header/header.vue";
-import FermainPangol from "./components/branding/pangol.vue";
-import FermainMap from "./components/map/FermainMap.vue";
-import FlickrImage from "./components/photo/FlickrImage.vue";
+import FermainHeader from './components/ui/header/header.vue';
+import FermainPangol from './components/branding/pangol.vue';
+import FermainMap from './components/map/FermainMap.vue';
+import FlickrImage from './components/photo/FlickrImage.vue';
+import SearchHistory from './components/photo/SearchHistory.vue';
 
-import { GmapService } from "./services/gmap";
-import { FlickrService } from "./services/flickr";
-import { FlickrPhoto } from "./services/flickr/photo";
+import { FlickrService, GmapService, GeoService } from './services';
+import { FlickrPhoto } from './services/flickr/photo';
+import { mapState } from 'vuex';
 
 @Component({
   components: {
@@ -42,46 +51,91 @@ import { FlickrPhoto } from "./services/flickr/photo";
     FermainPangol,
     FermainMap,
     FlickrImage,
+    SearchHistory,
   },
 })
 export default class App extends Vue {
+  public get defaultPosition(): google.maps.LatLngLiteral {
+    return this.$store.state.defaultPosition;
+  }
+
+  public get showHistory(): boolean {
+    return this.$store.state.showHistory;
+  }
+
+  public get locationEnabled() {
+    return this.geoService.enabled;
+  }
+  public geoService = new GeoService();
+  public gmapService!: GmapService;
+
   public results: FlickrPhoto[] = [];
   public flickrService = new FlickrService();
-  public gmapService!: GmapService;
-  public mapElement!: HTMLElement;
-  public searchElement!: HTMLInputElement;
-  public defaultPosition: google.maps.LatLngLiteral = {
-    lat: -29.883333,
-    lng: 31.049999,
-  };
 
   public mounted() {
-    this.mapElement = document.querySelector(".fermain-map") as HTMLElement;
-    this.searchElement = document.querySelector(
-      "input.fermain-map-search"
+    this.setupMap();
+  }
+
+  public myLocation() {
+    this.clearResults();
+    this.geoService.request((position: Position) => {
+      const center = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      } as google.maps.LatLngLiteral;
+
+      this.gmapService.setCenter(center);
+      this.imageSearch(center.lat, center.lng);
+      this.$store.dispatch('addHistoryItem', 'My Location');
+      this.$store.dispatch('updateDefaultPosition', center);
+    });
+  }
+
+  public imageSearch(lat: number, lon: number) {
+    this.flickrService
+      .search({
+        lat,
+        lon,
+      })
+      .then((results: FlickrPhoto[]) => {
+        this.clearResults();
+        if (results) {
+          this.results = results;
+        }
+      });
+  }
+
+  public clearResults() {
+    this.results = [];
+  }
+
+  public toggleHistory() {
+    this.$store.dispatch('toggleHistory');
+  }
+
+  public updateHistory(record: string) {
+    this.$store.dispatch('addHistoryItem', record);
+  }
+
+  private setupMap() {
+    const mapElement = document.querySelector('.fermain-map') as HTMLElement;
+    const searchElement = document.querySelector(
+      'input.fermain-map-search',
     ) as HTMLInputElement;
 
-    if (this.searchElement && this.mapElement) {
+    if (searchElement && mapElement) {
       this.gmapService = new GmapService(
-        this.mapElement,
+        mapElement,
         this.defaultPosition,
-        this.searchElement,
+        searchElement,
         (place: google.maps.places.PlaceResult) => {
-          if (!place) {
-            return;
+          if (place !== undefined) {
+            const lat = place?.geometry?.location?.lat();
+            const lon = place?.geometry?.location?.lng();
+            this.imageSearch(lat as number, lon as number);
+            this.updateHistory(place.name);
           }
-
-          this.flickrService
-            .search({
-              lat: place.geometry.location.lat(),
-              lon: place.geometry.location.lng(),
-            })
-            .then((results: FlickrPhoto[]) => {
-              if (results) {
-                this.results = results;
-              }
-            });
-        }
+        },
       );
     }
   }
@@ -195,6 +249,7 @@ header {
 main {
   grid-area: main;
   display: flex;
+  flex-direction: column;
 }
 
 footer {
@@ -224,6 +279,11 @@ footer {
 
   &-icon {
     background: $light;
+    color: $dark;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
   }
 
   &-items {
@@ -245,6 +305,8 @@ footer {
     display: flex;
     align-items: center;
     padding: 0.5rem;
+    font-size: 90%;
+    cursor: pointer;
   }
 }
 
@@ -256,19 +318,33 @@ footer {
 }
 
 .image-grid {
-    display: grid;
-    grid-auto-columns: max-content;
-    grid-template-columns: repeat( auto-fill, minmax(15rem, 1fr));
-    grid-auto-rows: min-content;
-    grid-gap: 1px;
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-auto-rows: 15rem;
+  grid-gap: 1px;
 
-    &-item {
-      width: 100%;
-
-      min-height: 15rem;
-      background-color: white;
-      // background-image: url(@/assets/branding/Pangol.svg);
-    }
+  &-item {
+    background-color: white;
+    background-position: center center;
+    background-size: cover;
+  }
 }
 
+.history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-auto-rows: 3rem;
+  grid-gap: 1px;
+  margin-bottom: 1px;
+
+  &-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: $light;
+    color: $dark;
+  }
+}
 </style>
