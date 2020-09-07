@@ -6,7 +6,11 @@
     <div class="fermain-logo">
       <h1>Fermain</h1>
     </div>
-    <main></main>
+    <main>
+      <div class="scroller image-grid">
+        <flickr-image v-for="(value, index) in results" :key="index" :photo="value" />
+      </div>
+    </main>
     <div class="sidebar-icons">
       <div class="sidebar-icon"></div>
       <div class="sidebar-icon"></div>
@@ -26,34 +30,58 @@ import { Component, Vue } from "vue-property-decorator";
 import FermainHeader from "./components/ui/header/header.vue";
 import FermainPangol from "./components/branding/pangol.vue";
 import FermainMap from "./components/map/FermainMap.vue";
+import FlickrImage from "./components/photo/FlickrImage.vue";
 
 import { GmapService } from "./services/gmap";
+import { FlickrService } from "./services/flickr";
+import { FlickrPhoto } from "./services/flickr/photo";
 
 @Component({
   components: {
     FermainHeader,
     FermainPangol,
     FermainMap,
+    FlickrImage,
   },
 })
 export default class App extends Vue {
-  gmapService!: GmapService;
-  mapElement!: HTMLElement;
-  searchElement!: HTMLInputElement;
-  defaultPosition: google.maps.LatLngLiteral = {
+  public results: FlickrPhoto[] = [];
+  public flickrService = new FlickrService();
+  public gmapService!: GmapService;
+  public mapElement!: HTMLElement;
+  public searchElement!: HTMLInputElement;
+  public defaultPosition: google.maps.LatLngLiteral = {
     lat: -29.883333,
     lng: 31.049999,
   };
 
-  mounted() {
-    this.mapElement = document.querySelector(".fermain-map");
-    this.searchElement = document.querySelector("input.fermain-map-search");
+  public mounted() {
+    this.mapElement = document.querySelector(".fermain-map") as HTMLElement;
+    this.searchElement = document.querySelector(
+      "input.fermain-map-search"
+    ) as HTMLInputElement;
 
     if (this.searchElement && this.mapElement) {
       this.gmapService = new GmapService(
         this.mapElement,
         this.defaultPosition,
-        this.searchElement
+        this.searchElement,
+        (place: google.maps.places.PlaceResult) => {
+          if (!place) {
+            return;
+          }
+
+          this.flickrService
+            .search({
+              lat: place.geometry.location.lat(),
+              lon: place.geometry.location.lng(),
+            })
+            .then((results: FlickrPhoto[]) => {
+              if (results) {
+                this.results = results;
+              }
+            });
+        }
       );
     }
   }
@@ -166,6 +194,7 @@ header {
 
 main {
   grid-area: main;
+  display: flex;
 }
 
 footer {
@@ -218,4 +247,28 @@ footer {
     padding: 0.5rem;
   }
 }
+
+.scroller {
+  max-height: calc(100vh - 3rem);
+  height: 100%;
+  overflow: auto;
+  flex: 1;
+}
+
+.image-grid {
+    display: grid;
+    grid-auto-columns: max-content;
+    grid-template-columns: repeat( auto-fill, minmax(15rem, 1fr));
+    grid-auto-rows: min-content;
+    grid-gap: 1px;
+
+    &-item {
+      width: 100%;
+
+      min-height: 15rem;
+      background-color: white;
+      // background-image: url(@/assets/branding/Pangol.svg);
+    }
+}
+
 </style>

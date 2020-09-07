@@ -17,6 +17,7 @@ export class GmapService {
         public targetElement: Element,
         public center: google.maps.LatLngLiteral,
         public searchElement: HTMLInputElement,
+        private searchCallback: (place: google.maps.places.PlaceResult) => void,
     ) {
         loader.load().then(() => {
             this.createMap(center);
@@ -66,6 +67,10 @@ export class GmapService {
         } else {
             this.map.setCenter(place.geometry.location);
             this.map.setZoom(10);
+        }
+
+        if (!!this.searchCallback) {
+            this.searchCallback(place);
         }
     }
 }
