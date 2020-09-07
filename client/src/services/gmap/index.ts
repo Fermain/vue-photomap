@@ -1,4 +1,5 @@
 import { Loader, LoaderOptions } from 'google-maps';
+import { mapTheme } from './theme';
 
 const options: LoaderOptions = {
     libraries: [
@@ -15,7 +16,7 @@ export class GmapService {
     constructor(
         public targetElement: Element,
         public center: google.maps.LatLngLiteral,
-        public searchElement: HTMLInputElement
+        public searchElement: HTMLInputElement,
     ) {
         loader.load().then(() => {
             this.createMap(center);
@@ -27,6 +28,8 @@ export class GmapService {
         this.map = new google.maps.Map(this.targetElement, {
             center,
             zoom: 8,
+            styles: mapTheme,
+            disableDefaultUI: true,
         });
     }
 
@@ -37,6 +40,17 @@ export class GmapService {
             this.onPlaceSearch();
         });
         this.getCurrentLocation();
+    }
+
+    public getCurrentLocation() {
+        if (!!navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition((position) => {
+                this.map.setCenter({
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                });
+            });
+        }
     }
 
     private onPlaceSearch() {
@@ -51,18 +65,7 @@ export class GmapService {
             this.map.fitBounds(place.geometry.viewport);
         } else {
             this.map.setCenter(place.geometry.location);
-            this.map.setZoom(17);
-        }
-    }
-
-    public getCurrentLocation() {
-        if(!!navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => { 
-                this.map.setCenter({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude
-                });
-            });
+            this.map.setZoom(10);
         }
     }
 }
