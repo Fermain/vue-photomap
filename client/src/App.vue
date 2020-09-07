@@ -92,21 +92,21 @@ export default class App extends Vue {
   }
 
   public imageSearch(lat: number, lon: number) {
+    this.clearResults();
     this.flickrService
       .search({
         lat,
         lon,
       })
       .then((results: FlickrPhoto[]) => {
-        this.clearResults();
         if (results) {
-          this.results = results;
+          this.$set(this, 'results', results);
         }
       });
   }
 
   public clearResults() {
-    this.results = [];
+    this.$set(this, 'results', [] as FlickrPhoto[]);
   }
 
   public toggleHistory() {
@@ -129,12 +129,11 @@ export default class App extends Vue {
         this.defaultPosition,
         searchElement,
         (place: google.maps.places.PlaceResult) => {
-          if (place !== undefined) {
-            const lat = place?.geometry?.location?.lat();
-            const lon = place?.geometry?.location?.lng();
-            this.imageSearch(lat as number, lon as number);
-            this.updateHistory(place.name);
-          }
+          const lat = place?.geometry?.location?.lat();
+          const lon = place?.geometry?.location?.lng();
+          // Workaround required due to callback pattern
+          this.imageSearch(lat as number, lon as number);
+          this.updateHistory(place.name);
         },
       );
     }
@@ -345,6 +344,7 @@ footer {
     align-items: center;
     background: $light;
     color: $dark;
+    text-align: center;
   }
 }
 </style>
