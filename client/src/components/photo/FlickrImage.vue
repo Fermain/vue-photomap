@@ -1,6 +1,6 @@
 <template>
-  <div class="image-grid-item">
-    <img class="flickr-image" :src="photo.url" :title="photo.title" />
+  <div class="image-grid-item" :style="styleObject">
+    <!-- <img class="flickr-image" :src="photo.url" :title="photo.title" /> -->
   </div>
 </template>
 
@@ -11,5 +11,9 @@ import { FlickrPhoto } from '../../services/flickr/photo';
 @Component
 export default class FlickrImage extends Vue {
   @Prop() public photo!: FlickrPhoto;
+
+  public styleObject = {
+    backgroundImage: `url(${this.photo.url})`,
+  };
 }
 </script>
