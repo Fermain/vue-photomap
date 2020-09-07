@@ -163,7 +163,7 @@ export const mapTheme: google.maps.MapTypeStyle[] = [
         elementType: 'geometry',
         stylers: [
             {
-                color: '#000000',
+                color: '#121618',
             },
         ],
     },
