@@ -6,8 +6,8 @@
 </template>
 
 <script lang="ts">
-import { Component, Prop, Vue } from "vue-property-decorator";
-import FermainPangol from "@/components/branding/pangol.vue";
+import { Component, Prop, Vue } from 'vue-property-decorator';
+import FermainPangol from '@/components/branding/pangol.vue';
 
 @Component({
   components: {
@@ -35,12 +35,12 @@ export default class FermainFooter extends Vue {
       IV: 4,
       I: 1,
     } as {
-      [key: string]: number
+      [key: string]: number,
     };
 
-    let str = "";
+    let str = '';
 
-    for (let i of Object.keys(roman)) {
+    for (const i of Object.keys(roman)) {
       const q = Math.floor(num / roman[i]);
       num -= q * roman[i];
       str += i.repeat(q);

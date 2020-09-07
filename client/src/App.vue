@@ -6,54 +6,135 @@
     <div class="fermain-logo">
       <h1>Fermain</h1>
     </div>
-    <main></main>
+    <main class="scroller">
+      <search-history v-show="showHistory" />
+      <div class="image-grid">
+        <flickr-image v-for="(value, index) in results" :key="index" :photo="value" />
+      </div>
+    </main>
     <div class="sidebar-icons">
-      <div class="sidebar-icon"></div>
-      <div class="sidebar-icon"></div>
-      <div class="sidebar-icon"></div>
+      <div class="sidebar-icon" @click="myLocation()">
+        <i class="material-icons" v-if="locationEnabled">location_on</i>
+        <i class="material-icons" v-else>location_off</i>
+      </div>
+      <div class="sidebar-icon" @click="toggleHistory()">
+        <i class="material-icons">history</i>
+      </div>
+      <div class="sidebar-icon" @click="clearResults()">
+        <i class="material-icons">autorenew</i>
+      </div>
     </div>
     <div class="sidebar-items">
-      <div class="sidebar-item">Menu Item</div>
-      <div class="sidebar-item">Menu Item</div>
-      <div class="sidebar-item">Menu Item</div>
+      <div class="sidebar-item" @click="myLocation()">My Location</div>
+      <div class="sidebar-item" @click="toggleHistory()">My History</div>
+      <div class="sidebar-item" @click="clearResults()">View Map</div>
     </div>
   </div>
 </template>
 
 <script lang="ts">
-import { Component, Vue } from "vue-property-decorator";
+import { Component, Vue } from 'vue-property-decorator';
 
-import FermainHeader from "./components/ui/header/header.vue";
-import FermainPangol from "./components/branding/pangol.vue";
-import FermainMap from "./components/map/FermainMap.vue";
+import FermainHeader from './components/ui/header/header.vue';
+import FermainPangol from './components/branding/pangol.vue';
+import FermainMap from './components/map/FermainMap.vue';
+import FlickrImage from './components/photo/FlickrImage.vue';
+import SearchHistory from './components/photo/SearchHistory.vue';
 
-import { GmapService } from "./services/gmap";
+import { FlickrService, GmapService, GeoService } from './services';
+import { FlickrPhoto } from './services/flickr/photo';
+import { mapState } from 'vuex';
 
 @Component({
   components: {
     FermainHeader,
     FermainPangol,
     FermainMap,
+    FlickrImage,
+    SearchHistory,
   },
 })
 export default class App extends Vue {
-  gmapService!: GmapService;
-  mapElement!: HTMLElement;
-  searchElement!: HTMLInputElement;
-  defaultPosition: google.maps.LatLngLiteral = {
-    lat: -29.883333,
-    lng: 31.049999,
-  };
+  public get defaultPosition(): google.maps.LatLngLiteral {
+    return this.$store.state.defaultPosition;
+  }
 
-  mounted() {
-    this.mapElement = document.querySelector(".fermain-map");
-    this.searchElement = document.querySelector("input.fermain-map-search");
+  public get showHistory(): boolean {
+    return this.$store.state.showHistory;
+  }
 
-    if (this.searchElement && this.mapElement) {
+  public get locationEnabled() {
+    return this.geoService.enabled;
+  }
+  public geoService = new GeoService();
+  public gmapService!: GmapService;
+
+  public results: FlickrPhoto[] = [];
+  public flickrService = new FlickrService();
+
+  public mounted() {
+    this.setupMap();
+  }
+
+  public myLocation() {
+    this.clearResults();
+    this.geoService.request((position: Position) => {
+      const center = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+      } as google.maps.LatLngLiteral;
+
+      this.gmapService.setCenter(center);
+      this.imageSearch(center.lat, center.lng);
+      this.$store.dispatch('addHistoryItem', 'My Location');
+      this.$store.dispatch('updateDefaultPosition', center);
+    });
+  }
+
+  public imageSearch(lat: number, lon: number) {
+    this.clearResults();
+    this.flickrService
+      .search({
+        lat,
+        lon,
+      })
+      .then((results: FlickrPhoto[]) => {
+        if (results) {
+          this.$set(this, 'results', results);
+        }
+      });
+  }
+
+  public clearResults() {
+    this.$set(this, 'results', [] as FlickrPhoto[]);
+  }
+
+  public toggleHistory() {
+    this.$store.dispatch('toggleHistory');
+  }
+
+  public updateHistory(record: string) {
+    this.$store.dispatch('addHistoryItem', record);
+  }
+
+  private setupMap() {
+    const mapElement = document.querySelector('.fermain-map') as HTMLElement;
+    const searchElement = document.querySelector(
+      'input.fermain-map-search',
+    ) as HTMLInputElement;
+
+    if (searchElement && mapElement) {
       this.gmapService = new GmapService(
-        this.mapElement,
+        mapElement,
         this.defaultPosition,
-        this.searchElement
+        searchElement,
+        (place: google.maps.places.PlaceResult) => {
+          const lat = place?.geometry?.location?.lat();
+          const lon = place?.geometry?.location?.lng();
+          // Workaround required due to callback pattern
+          this.imageSearch(lat as number, lon as number);
+          this.updateHistory(place.name);
+        },
       );
     }
   }
@@ -166,6 +247,8 @@ header {
 
 main {
   grid-area: main;
+  display: flex;
+  flex-direction: column;
 }
 
 footer {
@@ -195,6 +278,11 @@ footer {
 
   &-icon {
     background: $light;
+    color: $dark;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
   }
 
   &-items {
@@ -216,6 +304,47 @@ footer {
     display: flex;
     align-items: center;
     padding: 0.5rem;
+    font-size: 90%;
+    cursor: pointer;
+  }
+}
+
+.scroller {
+  max-height: calc(100vh - 3rem);
+  height: 100%;
+  overflow: auto;
+  flex: 1;
+}
+
+.image-grid {
+  display: grid;
+  grid-auto-columns: max-content;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  grid-auto-rows: 15rem;
+  grid-gap: 1px;
+
+  &-item {
+    background-color: white;
+    background-position: center center;
+    background-size: cover;
+  }
+}
+
+.history {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  grid-auto-rows: 3rem;
+  grid-gap: 1px;
+  margin-bottom: 1px;
+
+  &-item {
+    padding: 0.5rem 1rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: $light;
+    color: $dark;
+    text-align: center;
   }
 }
 </style>

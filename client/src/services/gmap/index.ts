@@ -17,6 +17,7 @@ export class GmapService {
         public targetElement: Element,
         public center: google.maps.LatLngLiteral,
         public searchElement: HTMLInputElement,
+        private searchCallback: (place: google.maps.places.PlaceResult) => void,
     ) {
         loader.load().then(() => {
             this.createMap(center);
@@ -39,18 +40,10 @@ export class GmapService {
         this.search.addListener('place_changed', () => {
             this.onPlaceSearch();
         });
-        this.getCurrentLocation();
     }
 
-    public getCurrentLocation() {
-        if (!!navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                this.map.setCenter({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                });
-            });
-        }
+    public setCenter(center: google.maps.LatLngLiteral) {
+        this.map.setCenter(center);
     }
 
     private onPlaceSearch() {
@@ -66,6 +59,10 @@ export class GmapService {
         } else {
             this.map.setCenter(place.geometry.location);
             this.map.setZoom(10);
+        }
+
+        if (!!this.searchCallback) {
+            this.searchCallback(place);
         }
     }
 }

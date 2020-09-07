@@ -8,6 +8,7 @@ export class FlickrService {
         api_key: process.env.VUE_APP_FLICKR_API_KEY,
         format: 'json',
         nojsoncallback: '1',
+        per_page: '32',
     };
 
     public async search(params: object) {
@@ -34,6 +35,6 @@ export class FlickrService {
             photo.isfamily,
         ));
 
-        return photos;
+        return photos as FlickrPhoto[];
     }
 }

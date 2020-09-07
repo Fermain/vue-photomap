@@ -11,7 +11,7 @@ import FermainMapSearch from '../../map/FermainMapSearch.vue';
 @Component({
   components: {
     FermainMapSearch,
-  }
+  },
 })
 export default class FermainHeader extends Vue {
 }
