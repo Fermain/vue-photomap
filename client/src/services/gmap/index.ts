@@ -40,18 +40,10 @@ export class GmapService {
         this.search.addListener('place_changed', () => {
             this.onPlaceSearch();
         });
-        this.getCurrentLocation();
     }
 
-    public getCurrentLocation() {
-        if (!!navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition((position) => {
-                this.map.setCenter({
-                    lat: position.coords.latitude,
-                    lng: position.coords.longitude,
-                });
-            });
-        }
+    public setCenter(center: google.maps.LatLngLiteral) {
+        this.map.setCenter(center);
     }
 
     private onPlaceSearch() {
