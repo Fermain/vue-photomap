@@ -1,14 +1,14 @@
 export interface FlickrPhotoResults {
-    photos: FlickrPhotos,
-    stat: string
+    photos: FlickrPhotos;
+    stat: string;
 }
 
 export interface FlickrPhotos {
-    page: number,
-    pages: number,
-    perpage: number,
-    total: string,
-    photo: FlickrPhoto[]
+    page: number;
+    pages: number;
+    perpage: number;
+    total: string;
+    photo: FlickrPhoto[];
 }
 
 export class FlickrPhoto {
@@ -23,7 +23,7 @@ export class FlickrPhoto {
         public title: string,
         public ispublic?: number,
         public isfriend?: number,
-        public isfamily?: number
+        public isfamily?: number,
     ) {
         this.url = `https://farm${farm}.staticflickr.com/${server}/${id}_${secret}.jpg`;
     }

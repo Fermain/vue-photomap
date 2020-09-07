@@ -5,10 +5,10 @@ export class FlickrService {
     public baseUrl = 'https://www.flickr.com/services/rest/';
 
     private globalConfig = {
-        api_key: process.env.FLICKR_API_KEY,
+        api_key: process.env.VUE_APP_FLICKR_API_KEY,
         format: 'json',
-        nojsoncallback: '1'
-    }
+        nojsoncallback: '1',
+    };
 
     public async search(params: object) {
         const url = new URL(this.baseUrl);
@@ -17,12 +17,12 @@ export class FlickrService {
         url.search = new URLSearchParams({
             ...params,
             method,
-            ...this.globalConfig
+            ...this.globalConfig,
         }).toString();
 
         const results = await http<FlickrPhotoResults>(url.toString());
 
-        const photos = results.jsonBody?.photos.photo.map((photo: any) => new FlickrPhoto(
+        const photos = results.jsonBody?.photos?.photo.map((photo: any) => new FlickrPhoto(
             photo.id,
             photo.owner,
             photo.secret,
@@ -31,7 +31,7 @@ export class FlickrService {
             photo.title,
             photo.ispublic,
             photo.isfriend,
-            photo.isfamily
+            photo.isfamily,
         ));
 
         return photos;

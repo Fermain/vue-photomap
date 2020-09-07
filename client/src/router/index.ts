@@ -6,8 +6,8 @@ Vue.use(VueRouter);
 const routes: RouteConfig[] = [
   {
     path: '/',
-    name: 'Index'
-  }
+    name: 'Index',
+  },
 ];
 
 const router = new VueRouter({
