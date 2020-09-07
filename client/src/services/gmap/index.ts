@@ -15,11 +15,15 @@ export class GmapService {
         public targetElement: Element,
         public center: google.maps.LatLngLiteral,
     ) {
-        loader.load().then((google) => {
-            this.map = new google.maps.Map(this.targetElement, {
-                center,
-                zoom: 8,
-            });
+        loader.load().then(() => {
+            this.createMap(center);
+        });
+    }
+
+    public createMap(center: google.maps.LatLngLiteral) {
+        this.map = new google.maps.Map(this.targetElement, {
+            center,
+            zoom: 8,
         });
     }
 }
